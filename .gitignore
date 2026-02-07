@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/.venv/
+.env
+
+# Build outputs
+.next/
+dist/
+build/
+
+# Python cache
+**/__pycache__/
+*.pyc
+
+# Large Files & User Uploads
+backend/uploads/
+*.mp4
+*.mov
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
