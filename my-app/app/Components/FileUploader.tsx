@@ -32,15 +32,19 @@ export default function FileUploader() {
     Setstatus("uploading");
     const formData = new FormData();
     formData.append("file", file);
-
     try {
-      await axios.post("http://127.0.0.1:8000/uploadFile", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      Setstatus("success");
-    } catch {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/uploadFile",
+        formData,
+      );
+      if (response.data.success) {
+        Setstatus("success");
+        alert("File Uploaded Successfully");
+      } else {
+        Setstatus("error");
+        alert("Upload Failed");
+      }
+    } catch (error) {
       Setstatus("error");
     }
   }
