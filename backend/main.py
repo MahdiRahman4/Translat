@@ -3,11 +3,10 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import subprocess
 from openai import OpenAI
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 app = FastAPI()
-import whisper
-#client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 files = []
@@ -37,10 +36,7 @@ async def handleFile(file : UploadFile = File(...)):
     f.write(contents)
   output_path = file_path.rsplit(".", 1)[0] + ".mp3"
   convertToAudio(file_path, output_path)
-  # transcribeAudio(output_path)
-  model = whisper.load_model("base")
-  result = model.transcribe(output_path, language="ar") 
-  print(result["text"])
+  translateText(transcribeAudio(output_path))
   return {"message": "File uploaded successfully", "file_path": output_path, "success":True}
 
 
@@ -62,13 +58,32 @@ def convertToAudio(inputFile, outputFile):
 
     except subprocess.CalledProcessError as e:
       print("Failure to convert")
-#TODO GET OPENAI TRANSCRIPTION API KEY BILL WORKING
-# def transcribeAudio(filePath):
-#   audio_file= open(filePath, "rb")
-#   transcription = client.audio.transcriptions.create(
-#     model="gpt-4o-transcribe", 
-#     file=audio_file,
-#     response_format="text"
-  
-# )
-#   print(transcription.text) 
+def transcribeAudio(filePath):
+  audio_file= open(filePath, "rb")
+  transcription = client.audio.transcriptions.create(
+    model="whisper-1", 
+    file=audio_file,
+    response_format="verbose_json",
+    timestamp_granularities=["segment"]
+)
+  print(transcription) 
+  return transcription.segments
+def translateText(segments):
+  translatedSegments = []
+  for segments in segments:
+    arabicText = segments.text
+  translation = client.chat.completions.create(
+    model = "gpt-4o-mini",
+    messages = [
+      {"role": "system", "content": "You are an salafi islamic translator, your job is to translate the texts of salafi scholars into english."},
+      {"role": "user", "content": f"Translate the following text into english, do not touch the timestamps, so basically u translate the arabic and return to me the text with the english and the timestamps at the right time: {arabicText}"}
+    ]
+  )
+  englishText = translation.choices[0].message.content
+  translatedSegments.append({
+    "start": segments.start,
+    "end": segments.end,
+    "arabic": arabicText,
+    "text": englishText
+  })
+  return translatedSegments
